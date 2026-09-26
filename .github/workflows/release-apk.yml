@@ -1,0 +1,101 @@
+# Builds a signed Android APK on GitHub's servers and attaches it to a GitHub Release.
+#
+# Trigger a release:   git tag v1.0.1 && git push origin v1.0.1
+# Or run it by hand:   GitHub → Actions → "Release Android APK" → Run workflow
+#                      (manual runs upload the APK as a downloadable artifact instead of a Release)
+#
+# Needs these repository secrets (Settings → Secrets and variables → Actions):
+#   ANDROID_KEYSTORE_BASE64   the signing keystore (.jks), base64-encoded
+#   ANDROID_KEYSTORE_PASSWORD password of the keystore
+#   ANDROID_KEY_ALIAS         alias of the key inside the keystore
+#   ANDROID_KEY_PASSWORD      password of that key
+name: Release Android APK
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write # needed to create the Release
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Java 17 (required by Android Gradle builds)
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Work out the version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="$(node -p "require('./app.json').expo.version")"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Building version $VERSION (versionCode ${{ github.run_number }})"
+
+      - name: Generate the native Android project
+        run: npx expo prebuild --platform android --no-install
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+          ANDROID_VERSION_CODE: ${{ github.run_number }}
+
+      - name: Restore the signing key
+        run: echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+
+      - name: Build the signed release APK
+        working-directory: android
+        run: |
+          ./gradlew assembleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file="$RUNNER_TEMP/release.jks" \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - name: Name the APK after the version
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk \
+            "ExpenseTracker-v${{ steps.version.outputs.version }}.apk"
+
+      - name: Upload the APK as a workflow artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ExpenseTracker-v${{ steps.version.outputs.version }}
+          path: ExpenseTracker-v*.apk
+
+      - name: Publish the GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v3
+        with:
+          files: ExpenseTracker-v*.apk
+          generate_release_notes: true
+          body: |
+            ## Install on Android
+            1. Open this page on your phone and tap **ExpenseTracker-v${{ steps.version.outputs.version }}.apk** below.
+            2. If Android asks, allow your browser to install unknown apps.
+            3. Open the downloaded file and tap **Install** (or **Update**).
