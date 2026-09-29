@@ -1,8 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Currency, formatMoney, formatMoneyCompact } from '../format';
 import { Bucket } from '../stats';
-import { theme } from '../theme';
+import { makeStyles, useTheme } from '../theme';
 
 type Props = {
   bars: Bucket[];
@@ -15,6 +15,8 @@ type Props = {
 const CHART_HEIGHT = 130;
 
 export function BarChart({ bars, currency, color, selectedIndex, onSelect }: Props) {
+  const theme = useTheme();
+  const styles = useStyles();
   const max = Math.max(0, ...bars.map((b) => b.value));
   const gap = bars.length > 20 ? 1 : bars.length > 10 ? 3 : 6;
   const selected = selectedIndex !== null ? bars[selectedIndex] : null;
@@ -81,7 +83,7 @@ export function BarChart({ bars, currency, color, selectedIndex, onSelect }: Pro
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   tooltipRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -111,4 +113,4 @@ const styles = StyleSheet.create({
     color: theme.muted,
   },
   labelSelected: { color: theme.text, fontWeight: '700' },
-});
+}));

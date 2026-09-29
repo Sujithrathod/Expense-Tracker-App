@@ -12,7 +12,7 @@ import {
 } from '../notifications';
 import { SmsPermission, hasSmsPermission, requestSmsPermission, smsSupported } from '../sms';
 import { Settings } from '../storage';
-import { theme } from '../theme';
+import { ThemeMode, makeStyles, useTheme } from '../theme';
 import { widgetsSupported } from '../widget';
 
 type Props = {
@@ -25,7 +25,15 @@ type Props = {
 
 const REMINDER_HOURS = [18, 19, 20, 21, 22];
 
+const THEME_MODES: { id: ThemeMode; label: string }[] = [
+  { id: 'system', label: 'System' },
+  { id: 'light', label: '☀️ Light' },
+  { id: 'dark', label: '🌙 Dark' },
+];
+
 export function SettingsSheet({ visible, settings, reminderStatus, onChange, onClose }: Props) {
+  const theme = useTheme();
+  const styles = useStyles();
   const insets = useSafeAreaInsets();
   const [testMessage, setTestMessage] = useState<string | null>(null);
 
@@ -69,6 +77,18 @@ export function SettingsSheet({ visible, settings, reminderStatus, onChange, onC
                   label={c}
                   selected={settings.currency === c}
                   onPress={() => onChange({ currency: c })}
+                />
+              ))}
+            </View>
+
+            <Text style={styles.label}>Appearance</Text>
+            <View style={styles.chips}>
+              {THEME_MODES.map((m) => (
+                <Chip
+                  key={m.id}
+                  label={m.label}
+                  selected={settings.themeMode === m.id}
+                  onPress={() => onChange({ themeMode: m.id })}
                 />
               ))}
             </View>
@@ -133,6 +153,8 @@ function SmsSection({
   settings: Settings;
   onChange: (patch: Partial<Settings>) => void;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   const [problem, setProblem] = useState<SmsPermission | null>(null);
 
   // If SMS access was switched off in Android settings, show how to turn it back on.
@@ -202,6 +224,7 @@ function SmsSection({
 }
 
 function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  const styles = useStyles();
   return (
     <Pressable
       onPress={onPress}
@@ -214,7 +237,7 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
   sheet: {
     backgroundColor: theme.card,
@@ -252,4 +275,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   secondaryText: { color: theme.primary, fontSize: 15, fontWeight: '600' },
-});
+}));

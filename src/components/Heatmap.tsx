@@ -1,9 +1,9 @@
 import { useMemo, useRef } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { addDays, monthShort, parseISODate, startOfWeek, toISODate } from '../format';
 import { DailyTotals, heatLevel, heatThresholds } from '../stats';
-import { theme } from '../theme';
+import { makeStyles, useTheme } from '../theme';
 
 type Props = {
   daily: DailyTotals;
@@ -22,6 +22,7 @@ const WEEKS = 53;
  * coloured by how much was spent. Covers the last 12 months and opens scrolled to today.
  */
 export function Heatmap({ daily, palette, selected, onSelect }: Props) {
+  const styles = useStyles();
   const scrollRef = useRef<ScrollView>(null);
   const todayISO = toISODate(new Date());
 
@@ -115,7 +116,7 @@ export function Heatmap({ daily, palette, selected, onSelect }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   row: { flexDirection: 'row' },
   weekdays: { marginTop: 18, marginRight: 6 },
   weekday: { height: STEP, lineHeight: CELL, fontSize: 10, color: theme.muted },
@@ -136,4 +137,4 @@ const styles = StyleSheet.create({
   },
   legendText: { fontSize: 11, color: theme.muted, marginHorizontal: 2 },
   legendCell: { width: 12, height: 12, borderRadius: 3 },
-});
+}));

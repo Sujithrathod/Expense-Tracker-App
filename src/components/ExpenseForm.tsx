@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CATEGORIES } from '../categories';
 import { Currency, daysAgo, isValidISODate, parseAmount } from '../format';
-import { theme } from '../theme';
+import { makeStyles, useTheme } from '../theme';
 import { CategoryId, Expense, ExpenseInput } from '../types';
 
 type Props = {
@@ -28,6 +28,8 @@ type Props = {
 };
 
 export function ExpenseForm({ visible, editing, currency, onSave, onDelete, onClose }: Props) {
+  const theme = useTheme();
+  const styles = useStyles();
   const insets = useSafeAreaInsets();
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<CategoryId>('food');
@@ -192,7 +194,7 @@ export function ExpenseForm({ visible, editing, currency, onSave, onDelete, onCl
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
   sheet: {
     backgroundColor: theme.card,
@@ -266,4 +268,4 @@ const styles = StyleSheet.create({
   deleteButtonConfirm: { backgroundColor: theme.danger },
   deleteText: { color: theme.danger, fontSize: 16, fontWeight: '600' },
   deleteTextConfirm: { color: '#fff' },
-});
+}));

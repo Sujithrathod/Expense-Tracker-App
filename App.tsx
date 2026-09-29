@@ -1,6 +1,15 @@
 import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, AppState, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  AppState,
+  Linking,
+  Pressable,
+  Text,
+  View,
+  useColorScheme,
+} from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ExpenseForm } from './src/components/ExpenseForm';
@@ -10,7 +19,7 @@ import { ExpensesScreen } from './src/screens/ExpensesScreen';
 import { TrackerScreen } from './src/screens/TrackerScreen';
 import { catchUpFromInbox, setSmsListening } from './src/sms';
 import { useExpenses } from './src/storage';
-import { theme } from './src/theme';
+import { ThemeContext, darkTheme, lightTheme, makeStyles, useTheme } from './src/theme';
 import { Expense, ExpenseInput } from './src/types';
 import { refreshWidgets } from './src/widget';
 
@@ -29,16 +38,40 @@ function isAddExpenseLink(url: string | null): boolean {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
       <Root />
     </SafeAreaProvider>
   );
 }
 
+type Store = ReturnType<typeof useExpenses>;
+
+/** Picks light or dark colours from the setting (or the phone's, for "System"). */
 function Root() {
+  const store = useExpenses();
+  const systemScheme = useColorScheme();
+  const { themeMode } = store.settings;
+  const dark = themeMode === 'system' ? systemScheme === 'dark' : themeMode === 'dark';
+  const theme = dark ? darkTheme : lightTheme;
+
+  // Colour the window behind the app too, so there's no white flash in dark mode.
+  useEffect(() => {
+    SystemUI.setBackgroundColorAsync(theme.background).catch(() => {});
+  }, [theme]);
+
+  return (
+    <ThemeContext.Provider value={theme}>
+      <StatusBar style={dark ? 'light' : 'dark'} />
+      <Main store={store} />
+    </ThemeContext.Provider>
+  );
+}
+
+function Main({ store }: { store: Store }) {
   const insets = useSafeAreaInsets();
+  const theme = useTheme();
+  const styles = useStyles();
   const { expenses, settings, loaded, addExpense, updateExpense, deleteExpense, updateSettings } =
-    useExpenses();
+    store;
 
   const [tab, setTab] = useState<Tab>('expenses');
   const [formOpen, setFormOpen] = useState(false);
@@ -118,13 +151,23 @@ function Root() {
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.appTitle}>{tab === 'expenses' ? 'Expenses' : 'Tracker'}</Text>
-        <Pressable
-          onPress={() => setSettingsOpen(true)}
-          style={styles.iconButton}
-          accessibilityLabel="Settings"
-        >
-          <Text style={styles.iconText}>⚙️</Text>
-        </Pressable>
+        <View style={styles.headerButtons}>
+          <Pressable
+            onPress={() => updateSettings({ themeMode: theme.dark ? 'light' : 'dark' })}
+            style={styles.iconButton}
+            accessibilityRole="button"
+            accessibilityLabel={theme.dark ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            <Text style={styles.iconText}>{theme.dark ? '☀️' : '🌙'}</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setSettingsOpen(true)}
+            style={styles.iconButton}
+            accessibilityLabel="Settings"
+          >
+            <Text style={styles.iconText}>⚙️</Text>
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.body}>
@@ -194,7 +237,7 @@ function Root() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   screen: { flex: 1, backgroundColor: theme.background },
   center: { alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1 },
@@ -207,6 +250,7 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   appTitle: { fontSize: 28, fontWeight: '800', color: theme.text },
+  headerButtons: { flexDirection: 'row', gap: 8 },
   iconButton: {
     width: 40,
     height: 40,
@@ -245,4 +289,4 @@ const styles = StyleSheet.create({
   tabInactive: { opacity: 0.45 },
   tabLabel: { fontSize: 12, color: theme.muted, marginTop: 2 },
   tabLabelActive: { color: theme.primary, fontWeight: '700' },
-});
+}));

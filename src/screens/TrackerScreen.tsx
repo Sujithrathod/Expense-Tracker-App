@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { BarChart } from '../components/BarChart';
 import { CategoryBreakdown } from '../components/CategoryBreakdown';
@@ -14,7 +14,7 @@ import {
   periodRange,
   periodStats,
 } from '../stats';
-import { HEAT_COLORS, HEAT_PALETTES, HeatColor, theme } from '../theme';
+import { HEAT_COLORS, HeatColor, makeStyles, useTheme } from '../theme';
 import { Expense } from '../types';
 
 type Props = {
@@ -41,6 +41,8 @@ export function TrackerScreen({
   onEdit,
   bottomInset,
 }: Props) {
+  const theme = useTheme();
+  const styles = useStyles();
   const [period, setPeriod] = useState<Period>('month');
   const [offset, setOffset] = useState(0);
   const [selectedBar, setSelectedBar] = useState<number | null>(null);
@@ -57,7 +59,7 @@ export function TrackerScreen({
     () => expenses.filter((e) => e.date === selectedDay),
     [expenses, selectedDay],
   );
-  const palette = HEAT_PALETTES[heatColor];
+  const palette = theme.heat[heatColor];
 
   function changePeriod(p: Period) {
     setPeriod(p);
@@ -176,7 +178,7 @@ export function TrackerScreen({
                 accessibilityState={{ selected: c === heatColor }}
                 style={[
                   styles.swatch,
-                  { backgroundColor: HEAT_PALETTES[c][3] },
+                  { backgroundColor: theme.heat[c][3] },
                   c === heatColor && styles.swatchActive,
                 ]}
               />
@@ -200,6 +202,7 @@ export function TrackerScreen({
 }
 
 function Stat({ label, value, onPress }: { label: string; value: string; onPress?: () => void }) {
+  const styles = useStyles();
   return (
     <Pressable style={styles.stat} onPress={onPress} disabled={!onPress}>
       <Text style={styles.statLabel}>{label}</Text>
@@ -210,7 +213,7 @@ function Stat({ label, value, onPress }: { label: string; value: string; onPress
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   segments: {
     flexDirection: 'row',
     backgroundColor: theme.border,
@@ -252,4 +255,4 @@ const styles = StyleSheet.create({
   swatches: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   swatch: { width: 16, height: 16, borderRadius: 8 },
   swatchActive: { borderWidth: 2, borderColor: theme.text },
-});
+}));

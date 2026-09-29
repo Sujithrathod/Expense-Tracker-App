@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, View } from 'react-native';
 
 import { getCategory } from '../categories';
 import { MonthSummary } from '../components/MonthSummary';
 import { Currency, formatMoney, friendlyDate, monthKey, monthLabel } from '../format';
-import { theme } from '../theme';
+import { makeStyles, useTheme } from '../theme';
 import { Expense } from '../types';
 
 type Props = {
@@ -15,6 +15,7 @@ type Props = {
 };
 
 export function ExpensesScreen({ expenses, currency, onEdit, bottomInset }: Props) {
+  const styles = useStyles();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
@@ -92,7 +93,7 @@ export function ExpensesScreen({ expenses, currency, onEdit, bottomInset }: Prop
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   screen: { flex: 1 },
   monthRow: {
     flexDirection: 'row',
@@ -131,4 +132,4 @@ const styles = StyleSheet.create({
   itemSub: { fontSize: 13, color: theme.muted, marginTop: 2 },
   smsTag: { color: theme.primary, fontWeight: '600' },
   itemAmount: { fontSize: 15, fontWeight: '700', color: theme.text },
-});
+}));

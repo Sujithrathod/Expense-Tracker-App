@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
 
 import { CURRENCIES, Currency } from './format';
-import { HEAT_COLORS, HeatColor } from './theme';
+import { HEAT_COLORS, HeatColor, ThemeMode } from './theme';
 import { Expense, ExpenseInput } from './types';
 
 const EXPENSES_KEY = 'expenses:v1';
@@ -18,6 +18,8 @@ export type Settings = {
   smsEnabled: boolean;
   /** When SMS auto-add was turned on (epoch ms); older messages are never imported. */
   smsEnabledAt: number;
+  /** Light, dark, or follow the phone's setting. */
+  themeMode: ThemeMode;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -27,7 +29,10 @@ export const DEFAULT_SETTINGS: Settings = {
   reminderHour: 19,
   smsEnabled: false,
   smsEnabledAt: 0,
+  themeMode: 'system',
 };
+
+const THEME_MODES: ThemeMode[] = ['system', 'light', 'dark'];
 
 function sanitizeSettings(raw: unknown): Settings {
   const s = { ...DEFAULT_SETTINGS, ...(typeof raw === 'object' && raw ? raw : {}) } as Settings;
@@ -39,6 +44,7 @@ function sanitizeSettings(raw: unknown): Settings {
   s.reminderEnabled = Boolean(s.reminderEnabled);
   s.smsEnabled = Boolean(s.smsEnabled);
   if (!Number.isFinite(s.smsEnabledAt)) s.smsEnabledAt = 0;
+  if (!THEME_MODES.includes(s.themeMode)) s.themeMode = DEFAULT_SETTINGS.themeMode;
   return s;
 }
 

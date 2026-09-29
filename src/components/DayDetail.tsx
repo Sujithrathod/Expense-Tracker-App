@@ -1,9 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { getCategory } from '../categories';
 import { Currency, formatMoney, longDate } from '../format';
 import { categoryTotals } from '../stats';
-import { theme } from '../theme';
+import { makeStyles, useTheme } from '../theme';
 import { Expense } from '../types';
 import { CategoryBreakdown } from './CategoryBreakdown';
 
@@ -16,6 +16,7 @@ type Props = {
 };
 
 export function DayDetail({ date, expenses, currency, onEdit }: Props) {
+  const styles = useStyles();
   const total = expenses.reduce((s, e) => s + e.amountCents, 0);
   const sorted = [...expenses].sort((a, b) => b.amountCents - a.amountCents);
 
@@ -58,7 +59,7 @@ export function DayDetail({ date, expenses, currency, onEdit }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   date: { fontSize: 15, fontWeight: '700', color: theme.text },
   empty: { marginTop: 8, fontSize: 14, color: theme.muted },
   total: { marginTop: 6, fontSize: 24, fontWeight: '800', color: theme.text },
@@ -74,4 +75,4 @@ const styles = StyleSheet.create({
   itemText: { flex: 1, fontSize: 14, color: theme.text, marginRight: 8 },
   itemAmount: { fontSize: 14, fontWeight: '600', color: theme.text },
   smsTag: { fontSize: 12, color: theme.primary, fontWeight: '600' },
-});
+}));

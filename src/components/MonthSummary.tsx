@@ -1,14 +1,15 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Currency, formatMoney } from '../format';
 import { categoryTotals } from '../stats';
-import { theme } from '../theme';
+import { makeStyles, useTheme } from '../theme';
 import { Expense } from '../types';
 import { CategoryBreakdown } from './CategoryBreakdown';
 
 type Props = { expenses: Expense[]; currency: Currency };
 
 export function MonthSummary({ expenses, currency }: Props) {
+  const styles = useStyles();
   const total = expenses.reduce((sum, e) => sum + e.amountCents, 0);
 
   return (
@@ -23,7 +24,7 @@ export function MonthSummary({ expenses, currency }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   card: {
     backgroundColor: theme.card,
     borderRadius: 16,
@@ -33,4 +34,4 @@ const styles = StyleSheet.create({
   caption: { fontSize: 13, color: theme.muted, fontWeight: '600' },
   total: { fontSize: 34, fontWeight: '800', color: theme.text, marginTop: 4 },
   count: { fontSize: 13, color: theme.muted, marginTop: 2 },
-});
+}));

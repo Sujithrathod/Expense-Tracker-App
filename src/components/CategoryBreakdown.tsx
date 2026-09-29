@@ -1,14 +1,15 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { getCategory } from '../categories';
 import { Currency, formatMoney } from '../format';
-import { theme } from '../theme';
+import { makeStyles, useTheme } from '../theme';
 import { CategoryId } from '../types';
 
 type Props = { rows: [CategoryId, number][]; total: number; currency: Currency };
 
 /** Per-category bars with amount and share of the total. */
 export function CategoryBreakdown({ rows, total, currency }: Props) {
+  const styles = useStyles();
   if (rows.length === 0) return null;
   return (
     <View style={styles.breakdown}>
@@ -41,7 +42,7 @@ export function CategoryBreakdown({ rows, total, currency }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => ({
   breakdown: { marginTop: 16, gap: 12 },
   rowTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   rowLabel: { fontSize: 14, color: theme.text },
@@ -49,4 +50,4 @@ const styles = StyleSheet.create({
   rowPct: { color: theme.muted, fontWeight: '400' },
   track: { height: 8, borderRadius: 4, backgroundColor: theme.border, overflow: 'hidden' },
   bar: { height: 8, borderRadius: 4 },
-});
+}));
