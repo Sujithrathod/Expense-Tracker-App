@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ExpenseForm } from './src/components/ExpenseForm';
@@ -8,6 +8,7 @@ import { SettingsSheet } from './src/components/SettingsSheet';
 import { ReminderStatus, onReminderTapped, syncDailyReminder } from './src/notifications';
 import { ExpensesScreen } from './src/screens/ExpensesScreen';
 import { TrackerScreen } from './src/screens/TrackerScreen';
+import { catchUpFromInbox, setSmsListening } from './src/sms';
 import { useExpenses } from './src/storage';
 import { theme } from './src/theme';
 import { Expense, ExpenseInput } from './src/types';
@@ -76,6 +77,18 @@ function Root() {
   useEffect(() => {
     if (loaded) refreshWidgets(expenses, settings.currency);
   }, [loaded, expenses, settings.currency]);
+
+  // SMS auto-add: keep the native receiver's switch in sync, and each time the app comes to the
+  // foreground pick up any payment SMS it missed while closed.
+  useEffect(() => {
+    if (!loaded) return;
+    setSmsListening(settings.smsEnabled);
+    if (!settings.smsEnabled) return;
+    const catchUp = () => catchUpFromInbox().catch((e) => console.warn('SMS catch-up failed', e));
+    catchUp();
+    const sub = AppState.addEventListener('change', (state) => state === 'active' && catchUp());
+    return () => sub.remove();
+  }, [loaded, settings.smsEnabled]);
 
   // Opening the app from the reminder or the widget's "+ Add" goes straight to the add form.
   useEffect(() => {

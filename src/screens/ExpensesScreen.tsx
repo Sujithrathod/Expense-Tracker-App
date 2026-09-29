@@ -80,6 +80,7 @@ export function ExpensesScreen({ expenses, currency, onEdit, bottomInset }: Prop
                 </Text>
                 <Text style={styles.itemSub}>
                   {cat.label} · {friendlyDate(item.date)}
+                  {item.source === 'sms' && <Text style={styles.smsTag}>  💬 SMS</Text>}
                 </Text>
               </View>
               <Text style={styles.itemAmount}>{formatMoney(item.amountCents, currency)}</Text>
@@ -128,5 +129,6 @@ const styles = StyleSheet.create({
   itemBody: { flex: 1, marginRight: 8 },
   itemTitle: { fontSize: 15, fontWeight: '600', color: theme.text },
   itemSub: { fontSize: 13, color: theme.muted, marginTop: 2 },
+  smsTag: { color: theme.primary, fontWeight: '600' },
   itemAmount: { fontSize: 15, fontWeight: '700', color: theme.text },
 });

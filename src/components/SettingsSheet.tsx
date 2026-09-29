@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Linking, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CURRENCIES } from '../format';
@@ -10,6 +10,7 @@ import {
   remindersUnsupportedReason,
   sendTestReminder,
 } from '../notifications';
+import { SmsPermission, hasSmsPermission, requestSmsPermission, smsSupported } from '../sms';
 import { Settings } from '../storage';
 import { theme } from '../theme';
 import { widgetsSupported } from '../widget';
@@ -108,6 +109,8 @@ export function SettingsSheet({ visible, settings, reminderStatus, onChange, onC
             )}
             {testMessage && <Text style={styles.status}>{testMessage}</Text>}
 
+            <SmsSection visible={visible} settings={settings} onChange={onChange} />
+
             <Text style={styles.label}>Home screen widget</Text>
             <Text style={styles.status}>
               {widgetsSupported
@@ -118,6 +121,83 @@ export function SettingsSheet({ visible, settings, reminderStatus, onChange, onC
         </View>
       </View>
     </Modal>
+  );
+}
+
+function SmsSection({
+  visible,
+  settings,
+  onChange,
+}: {
+  visible: boolean;
+  settings: Settings;
+  onChange: (patch: Partial<Settings>) => void;
+}) {
+  const [problem, setProblem] = useState<SmsPermission | null>(null);
+
+  // If SMS access was switched off in Android settings, show how to turn it back on.
+  useEffect(() => {
+    if (!visible || !settings.smsEnabled) return;
+    hasSmsPermission().then((ok) => setProblem(ok ? null : 'denied'));
+  }, [visible, settings.smsEnabled]);
+
+  async function toggle(on: boolean) {
+    if (!on) {
+      setProblem(null);
+      onChange({ smsEnabled: false });
+      return;
+    }
+    const permission = await requestSmsPermission();
+    if (permission === 'granted') {
+      setProblem(null);
+      // Only messages from now on are imported.
+      onChange({ smsEnabled: true, smsEnabledAt: Date.now() });
+    } else {
+      setProblem(permission);
+    }
+  }
+
+  return (
+    <>
+      <View style={styles.switchRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.rowTitle}>Auto-add from SMS</Text>
+          <Text style={styles.rowSub}>Adds payments from bank “debited” messages</Text>
+        </View>
+        <Switch
+          value={settings.smsEnabled && problem === null}
+          onValueChange={toggle}
+          disabled={!smsSupported}
+          trackColor={{ true: theme.primary, false: theme.border }}
+          accessibilityLabel="Auto-add from SMS"
+        />
+      </View>
+
+      {!smsSupported ? (
+        <Text style={styles.status}>Available in the installed Android app (APK).</Text>
+      ) : problem ? (
+        <View>
+          <Text style={[styles.status, { color: theme.danger }]}>
+            Android didn’t allow SMS access. For apps installed outside the Play Store:
+          </Text>
+          <Text style={styles.status}>
+            1. Tap “Open app settings” below{'\n'}
+            2. Tap ⋮ (top-right) → “Allow restricted settings”{'\n'}
+            3. Go to Permissions → SMS → Allow{'\n'}
+            4. Come back and turn this switch on again
+          </Text>
+          <Pressable style={styles.secondaryButton} onPress={() => Linking.openSettings()}>
+            <Text style={styles.secondaryText}>Open app settings</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <Text style={styles.status}>
+          {settings.smsEnabled
+            ? 'On. New payments are added automatically. Messages are read on your phone only; nothing is uploaded.'
+            : 'Off. Only messages received after you turn this on are used.'}
+        </Text>
+      )}
+    </>
   );
 }
 

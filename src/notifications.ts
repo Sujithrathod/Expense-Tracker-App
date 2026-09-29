@@ -105,6 +105,27 @@ export function onReminderTapped(onTap: () => void): () => void {
   return () => sub.remove();
 }
 
+const SMS_CHANNEL_ID = 'sms-expenses';
+
+/**
+ * Shows "Added ₹250 · Swiggy" right away. Runs from the background SMS task, so it never asks
+ * for permission; it only posts if notifications were already allowed.
+ */
+export async function notifyExpenseAdded(title: string, body: string): Promise<void> {
+  if (!Notifications) return;
+  if (!(await Notifications.getPermissionsAsync()).granted) return;
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync(SMS_CHANNEL_ID, {
+      name: 'Expenses added from SMS',
+      importance: Notifications.AndroidImportance.DEFAULT,
+    });
+  }
+  await Notifications.scheduleNotificationAsync({
+    content: { title, body },
+    trigger: { channelId: SMS_CHANNEL_ID },
+  });
+}
+
 export function formatHour(hour: number): string {
   const h = hour % 12 === 0 ? 12 : hour % 12;
   return `${h}:00 ${hour < 12 ? 'AM' : 'PM'}`;

@@ -45,6 +45,7 @@ export function DayDetail({ date, expenses, currency, onEdit }: Props) {
                 >
                   <Text style={styles.itemText} numberOfLines={1}>
                     {cat.emoji} {e.note || cat.label}
+                    {e.source === 'sms' && <Text style={styles.smsTag}>  💬 SMS</Text>}
                   </Text>
                   <Text style={styles.itemAmount}>{formatMoney(e.amountCents, currency)}</Text>
                 </Pressable>
@@ -72,4 +73,5 @@ const styles = StyleSheet.create({
   },
   itemText: { flex: 1, fontSize: 14, color: theme.text, marginRight: 8 },
   itemAmount: { fontSize: 14, fontWeight: '600', color: theme.text },
+  smsTag: { fontSize: 12, color: theme.primary, fontWeight: '600' },
 });
